@@ -42,7 +42,7 @@
 	}
 
 	// Add/remove click listener and handle scroll lock when menu opens/closes
-	$: {
+	$: if (browser) {
 		if (isMobileMenuOpen) {
 			window.addEventListener('click', handleClickOutside);
 			lockScroll();
@@ -54,6 +54,7 @@
 
 	// Cleanup on destroy
 	onDestroy(() => {
+		if (!browser) return;
 		window.removeEventListener('click', handleClickOutside);
 		unlockScroll();
 	});
