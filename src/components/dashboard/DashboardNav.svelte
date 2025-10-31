@@ -5,7 +5,7 @@
 	import { profile } from '$lib/stores/profile';
 	import { ProfileService } from '$lib/services/profileService';
 	import NotificationBell from '../notifications/NotificationBell.svelte';
-	
+
 	$: user = $auth.user;
 	$: avatarUrl = ProfileService.getAvatarUrl($profile?.avatar_url || null);
 	$: initials = ProfileService.generateInitials(
@@ -13,7 +13,32 @@
 		$profile?.username || null,
 		user?.email
 	);
-	
+
+	// Mobile menu state
+	let isMobileMenuOpen = false;
+
+	// Close mobile menu when route changes
+	$: if ($page.url.pathname) {
+		isMobileMenuOpen = false;
+	}
+
+	function toggleMobileMenu() {
+		isMobileMenuOpen = !isMobileMenuOpen;
+	}
+
+	function closeMobileMenu() {
+		isMobileMenuOpen = false;
+	}
+
+	// Close menu when clicking outside
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		const nav = document.querySelector('.horizontal-nav');
+		if (isMobileMenuOpen && nav && !nav.contains(target)) {
+			isMobileMenuOpen = false;
+		}
+	}
+
 	$: navItems = [
 		{
 			name: 'Dashboard',
@@ -55,11 +80,15 @@
 		search: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>`,
 		cocktail: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16L12 12 4 4z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v6"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21h8"></path>`,
 		exchange: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>`,
-		settings: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>`
+		settings: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>`,
+		menu: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>`,
+		close: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>`
 	};
 
 	$: currentPath = $page.url.pathname;
 </script>
+
+<svelte:window on:click={handleClickOutside} />
 
 <nav class="horizontal-nav">
 	<div class="nav-container">
@@ -68,14 +97,43 @@
 				<h1 class="brand-title">📚 Booze & Books</h1>
 			</a>
 		</div>
-		
-		<ul class="nav-items">
+
+		<!-- Mobile menu toggle button -->
+		<button
+			class="mobile-menu-toggle"
+			on:click={toggleMobileMenu}
+			aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+			aria-expanded={isMobileMenuOpen}
+		>
+			<svg class="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				{@html isMobileMenuOpen ? icons.close : icons.menu}
+			</svg>
+		</button>
+
+		<!-- Desktop notification bell and avatar (visible on desktop) -->
+		<div class="desktop-user-actions">
+			{#if user}
+				<NotificationBell />
+				<a href="/app/profile" class="nav-link profile-link" title="Profile">
+					<div class="user-avatar">
+						{#if avatarUrl}
+							<img src={avatarUrl} alt="Profile" class="avatar-img" />
+						{:else}
+							<div class="avatar-placeholder">{initials}</div>
+						{/if}
+					</div>
+				</a>
+			{/if}
+		</div>
+
+		<!-- Navigation items (desktop + mobile menu) -->
+		<ul class="nav-items" class:mobile-menu-open={isMobileMenuOpen}>
 			{#each navItems as item}
 				<li class="nav-item">
 					<a
 						href={item.href}
 						class="nav-link {
-							currentPath === item.href || 
+							currentPath === item.href ||
 							(item.href === '/app/books' && currentPath.startsWith('/app/books')) ||
 							(item.href === '/app/discover' && currentPath.startsWith('/app/discover')) ||
 							(item.href === '/app/swaps' && currentPath.startsWith('/app/swaps')) ||
@@ -83,6 +141,7 @@
 								? 'active'
 								: ''
 						}"
+						on:click={closeMobileMenu}
 					>
 						<svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 							{@html icons[item.icon]}
@@ -96,14 +155,14 @@
 					</a>
 				</li>
 			{/each}
-			
-			<!-- User Profile, Notifications, and Sign Out -->
+
+			<!-- User Profile, Notifications, and Sign Out (mobile menu only) -->
 			{#if user}
-				<li class="nav-item">
+				<li class="nav-item mobile-only">
 					<NotificationBell />
 				</li>
-				<li class="nav-item">
-					<a href="/app/profile" class="nav-link profile-link" title="Profile">
+				<li class="nav-item mobile-only">
+					<a href="/app/profile" class="nav-link profile-link" title="Profile" on:click={closeMobileMenu}>
 						<div class="user-avatar">
 							{#if avatarUrl}
 								<img src={avatarUrl} alt="Profile" class="avatar-img" />
@@ -114,8 +173,8 @@
 						<span class="nav-text">Profile</span>
 					</a>
 				</li>
-				<li class="nav-item">
-					<form method="POST" action="/auth/logout" style="display: inline;">
+				<li class="nav-item mobile-only">
+					<form method="POST" action="/auth/logout" style="display: inline; width: 100%;">
 						<button type="submit" class="nav-link logout-btn">
 							<svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -328,45 +387,198 @@
 		transform: translateY(-1px);
 	}
 
-	/* Responsive Design */
+	/* Mobile menu toggle button */
+	.mobile-menu-toggle {
+		display: none;
+		background: none;
+		border: none;
+		color: var(--accent-cream);
+		cursor: pointer;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		transition: all 0.2s ease;
+		min-width: 44px;
+		min-height: 44px;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.mobile-menu-toggle:hover {
+		background: rgba(212, 175, 55, 0.2);
+		color: var(--secondary-gold);
+	}
+
+	.menu-icon {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	/* Desktop user actions (hidden on mobile) */
+	.desktop-user-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	/* Mobile-only items (hidden on desktop) */
+	.mobile-only {
+		display: none;
+	}
+
+	/* ========================================
+	   RESPONSIVE DESIGN
+	   ======================================== */
+
+	/* Tablet and below - Show hamburger menu */
 	@media (max-width: 768px) {
 		.nav-container {
 			padding: 0 1rem;
+			position: relative;
 		}
-		
-		.nav-items {
-			gap: 0.25rem;
+
+		/* Show mobile menu toggle */
+		.mobile-menu-toggle {
+			display: flex;
+			order: 3;
 		}
-		
-		.nav-link {
-			padding: 0.5rem 0.75rem;
-		}
-		
-		.nav-text {
+
+		/* Hide desktop user actions */
+		.desktop-user-actions {
 			display: none;
 		}
-		
+
+		/* Navigation items become mobile menu */
+		.nav-items {
+			position: fixed;
+			top: 4rem;
+			right: 0;
+			width: 280px;
+			max-width: 85vw;
+			background: linear-gradient(135deg, var(--primary-burgundy) 0%, var(--deep-red) 100%);
+			box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
+			flex-direction: column;
+			gap: 0;
+			padding: 1rem 0;
+			transform: translateX(100%);
+			transition: transform 0.3s ease-in-out;
+			z-index: 1000;
+			max-height: calc(100vh - 4rem);
+			overflow-y: auto;
+			border-left: 2px solid var(--secondary-gold);
+		}
+
+		.nav-items.mobile-menu-open {
+			transform: translateX(0);
+		}
+
+		/* Mobile menu items */
+		.nav-item {
+			width: 100%;
+		}
+
+		.nav-link {
+			width: 100%;
+			padding: 1rem 1.5rem;
+			border-radius: 0;
+			justify-content: flex-start;
+			gap: 1rem;
+			border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+			min-height: 48px;
+		}
+
+		.nav-link:hover {
+			transform: none;
+			background: rgba(212, 175, 55, 0.15);
+		}
+
+		.nav-link.active {
+			border-left: 4px solid var(--secondary-gold);
+			background: rgba(212, 175, 55, 0.2);
+		}
+
+		.nav-text {
+			display: inline;
+			font-size: 1rem;
+		}
+
+		/* Show mobile-only items */
+		.mobile-only {
+			display: block;
+			border-top: 2px solid var(--secondary-gold);
+			margin-top: 0.5rem;
+			padding-top: 0.5rem;
+		}
+
+		.mobile-only:first-of-type {
+			margin-top: 0.5rem;
+		}
+
+		.logout-btn {
+			width: 100%;
+			justify-content: flex-start;
+			text-align: left;
+			border: none;
+			border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+		}
+
 		.brand-title {
-			font-size: 0.8rem;
+			font-size: 0.85rem;
+		}
+
+		.nav-badge {
+			margin-left: auto;
 		}
 	}
 
+	/* Small phones */
 	@media (max-width: 480px) {
 		.nav-container {
-			flex-direction: column;
-			height: auto;
-			padding: 1rem;
-			gap: 1rem;
+			padding: 0 0.75rem;
+			height: 3.5rem;
 		}
-		
-		.nav-text {
-			display: inline;
+
+		.brand-title {
+			font-size: 0.75rem;
 		}
-		
+
 		.nav-items {
 			width: 100%;
-			justify-content: center;
-			flex-wrap: wrap;
+			max-width: 100vw;
+			top: 3.5rem;
+		}
+
+		.nav-link {
+			padding: 0.875rem 1.25rem;
+		}
+	}
+
+	/* Accessibility: Prevent body scroll when mobile menu is open */
+	:global(body:has(.nav-items.mobile-menu-open)) {
+		overflow: hidden;
+	}
+
+	/* Reduce motion for accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		.nav-items {
+			transition: none;
+		}
+
+		.nav-link,
+		.mobile-menu-toggle,
+		.brand-link {
+			transition: none;
+		}
+	}
+
+	/* Touch device optimizations */
+	@media (hover: none) and (pointer: coarse) {
+		.nav-link,
+		.mobile-menu-toggle {
+			min-height: 48px;
+		}
+
+		.mobile-menu-toggle {
+			-webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 		}
 	}
 </style>

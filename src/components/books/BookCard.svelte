@@ -724,4 +724,264 @@
 			transform: rotate(360deg);
 		}
 	}
+
+	/* ========================================
+	   MOBILE RESPONSIVENESS
+	   ======================================== */
+
+	/* Medium screens and below (tablets and large phones) */
+	@media (max-width: 768px) {
+		.book-card {
+			padding: 1.25rem;
+		}
+
+		.book-cover {
+			width: 70px;
+			height: 98px;
+		}
+
+		.book-title {
+			font-size: 1rem;
+		}
+
+		.book-author {
+			font-size: 0.85rem;
+		}
+
+		/* Make cocktail button more prominent on tablets */
+		.btn-cocktail-top {
+			padding: 0.5rem 1rem;
+			font-size: 0.85rem;
+		}
+	}
+
+	/* Small screens (mobile phones) */
+	@media (max-width: 640px) {
+		.book-card {
+			padding: 1rem;
+			margin-bottom: 1.5rem;
+		}
+
+		/* Larger book cover on mobile for better visibility */
+		.book-cover {
+			width: 80px;
+			height: 112px;
+		}
+
+		/* Move cocktail button below content instead of absolute positioning */
+		.cocktail-button-container {
+			position: static;
+			margin-bottom: 1rem;
+			display: flex;
+			justify-content: flex-end;
+		}
+
+		.btn-cocktail-top {
+			width: 100%;
+			justify-content: center;
+			padding: 0.625rem 1rem;
+			font-size: 0.875rem;
+			/* Ensure minimum touch target of 44px */
+			min-height: 44px;
+		}
+
+		/* Improve book content layout */
+		.book-card-content {
+			gap: 0.75rem;
+		}
+
+		.book-title {
+			font-size: 0.95rem;
+			line-height: 1.3;
+		}
+
+		.book-author {
+			font-size: 0.8rem;
+		}
+
+		.book-genre {
+			font-size: 0.8rem;
+		}
+
+		/* Improve description readability and touch scrolling */
+		.book-description {
+			font-size: 0.8rem;
+			max-height: 6em; /* Show more on mobile */
+			padding: 0.625rem;
+			/* Better touch scrolling */
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: auto; /* Wider scrollbar for touch */
+		}
+
+		.book-description::-webkit-scrollbar {
+			width: 12px; /* Wider for touch devices */
+		}
+
+		.book-description::-webkit-scrollbar-thumb {
+			background: #a0aec0; /* More visible */
+			border-radius: 6px;
+		}
+
+		/* Larger toggle switch for easier touch interaction */
+		.toggle-switch {
+			width: 52px;
+			height: 28px;
+		}
+
+		.toggle-slider:before {
+			height: 22px;
+			width: 22px;
+		}
+
+		input:checked + .toggle-slider:before {
+			transform: translateX(24px);
+		}
+
+		.availability-section {
+			padding: 0.875rem;
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		.availability-label {
+			font-size: 0.875rem;
+		}
+
+		/* Swap request status improvements */
+		.swap-request-status {
+			padding: 0.875rem;
+		}
+
+		.status-info {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+
+		.offered-book-info {
+			font-size: 0.8rem;
+		}
+
+		/* Touch-friendly action buttons */
+		.actions-section {
+			flex-direction: column;
+			gap: 0.75rem;
+			padding-top: 1rem;
+		}
+
+		.actions-section button {
+			width: 100%;
+			/* Ensure minimum 44px touch target */
+			min-height: 44px;
+			padding: 0.75rem 1rem;
+			font-size: 0.9rem;
+			justify-content: center;
+		}
+
+		.btn-edit,
+		.btn-delete,
+		.btn-swap,
+		.btn-cancel {
+			width: 100%;
+			min-height: 44px;
+			padding: 0.75rem 1rem;
+			font-size: 0.9rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+	}
+
+	/* Extra small screens (iPhone SE, older phones) */
+	@media (max-width: 480px) {
+		.book-card {
+			padding: 0.875rem;
+			border-radius: 8px;
+		}
+
+		.book-card-content {
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+		}
+
+		.book-cover-section {
+			margin-bottom: 0.75rem;
+		}
+
+		/* Center-aligned on very small screens */
+		.book-cover {
+			width: 96px;
+			height: 134px;
+		}
+
+		.book-details {
+			width: 100%;
+		}
+
+		.book-title {
+			font-size: 1rem;
+		}
+
+		.book-description {
+			text-align: left; /* Keep description left-aligned for readability */
+		}
+
+		.condition-section {
+			display: flex;
+			justify-content: center;
+		}
+
+		/* Stack availability section */
+		.availability-section {
+			flex-direction: column;
+			text-align: center;
+			gap: 0.75rem;
+		}
+
+		.toggle-switch {
+			align-self: center;
+		}
+	}
+
+	/* Accessibility: Reduce motion for users who prefer it */
+	@media (prefers-reduced-motion: reduce) {
+		.book-card,
+		.btn-cocktail-top,
+		.toggle-slider,
+		.toggle-slider:before,
+		.actions-section button {
+			transition: none;
+		}
+
+		.btn-spinner {
+			animation: none;
+		}
+	}
+
+	/* Touch device optimizations */
+	@media (hover: none) and (pointer: coarse) {
+		/* Remove hover effects on touch devices */
+		.book-card:hover {
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		}
+
+		/* Larger tap targets */
+		.btn-cocktail-top,
+		.btn-edit,
+		.btn-delete,
+		.btn-swap,
+		.btn-cancel {
+			min-height: 48px; /* iOS recommended minimum */
+			padding: 0.875rem 1.25rem;
+		}
+
+		/* Prevent text selection on buttons */
+		button {
+			-webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+	}
 </style>
