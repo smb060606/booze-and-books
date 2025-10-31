@@ -6,6 +6,7 @@
 	import { ProfileService } from '$lib/services/profileService';
 	import NotificationBell from '../notifications/NotificationBell.svelte';
 	import { onDestroy } from 'svelte';
+	import { lockScroll, unlockScroll } from '$lib/utils/scrollLock';
 
 	$: user = $auth.user;
 	$: avatarUrl = ProfileService.getAvatarUrl($profile?.avatar_url || null);
@@ -40,18 +41,21 @@
 		}
 	}
 
-	// Add/remove click listener when menu opens/closes
+	// Add/remove click listener and handle scroll lock when menu opens/closes
 	$: {
 		if (isMobileMenuOpen) {
 			window.addEventListener('click', handleClickOutside);
+			lockScroll();
 		} else {
 			window.removeEventListener('click', handleClickOutside);
+			unlockScroll();
 		}
 	}
 
 	// Cleanup on destroy
 	onDestroy(() => {
 		window.removeEventListener('click', handleClickOutside);
+		unlockScroll();
 	});
 
 	$: navItems = [
@@ -565,10 +569,8 @@
 		}
 	}
 
-	/* Accessibility: Prevent body scroll when mobile menu is open */
-	:global(body:has(.nav-items.mobile-menu-open)) {
-		overflow: hidden;
-	}
+	/* Note: Body scroll is now handled via lockScroll/unlockScroll utilities
+	   which prevent layout shift by compensating for scrollbar width */
 
 	/* Reduce motion for accessibility */
 	@media (prefers-reduced-motion: reduce) {
