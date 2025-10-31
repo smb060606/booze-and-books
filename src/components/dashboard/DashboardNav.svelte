@@ -6,6 +6,7 @@
 	import { ProfileService } from '$lib/services/profileService';
 	import NotificationBell from '../notifications/NotificationBell.svelte';
 	import { onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 	import { lockScroll, unlockScroll } from '$lib/utils/scrollLock';
 
 	$: user = $auth.user;
@@ -42,6 +43,7 @@
 	}
 
 	// Add/remove click listener and handle scroll lock when menu opens/closes
+	// Guard with browser check to prevent SSR errors
 	$: if (browser) {
 		if (isMobileMenuOpen) {
 			window.addEventListener('click', handleClickOutside);
@@ -52,11 +54,12 @@
 		}
 	}
 
-	// Cleanup on destroy
+	// Cleanup on destroy (browser check ensures this only runs client-side)
 	onDestroy(() => {
-		if (!browser) return;
-		window.removeEventListener('click', handleClickOutside);
-		unlockScroll();
+		if (browser) {
+			window.removeEventListener('click', handleClickOutside);
+			unlockScroll();
+		}
 	});
 
 	$: navItems = [
