@@ -5,6 +5,7 @@
 	import { profile } from '$lib/stores/profile';
 	import { ProfileService } from '$lib/services/profileService';
 	import NotificationBell from '../notifications/NotificationBell.svelte';
+	import { onDestroy } from 'svelte';
 
 	$: user = $auth.user;
 	$: avatarUrl = ProfileService.getAvatarUrl($profile?.avatar_url || null);
@@ -34,10 +35,24 @@
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
 		const nav = document.querySelector('.horizontal-nav');
-		if (isMobileMenuOpen && nav && !nav.contains(target)) {
+		if (nav && !nav.contains(target)) {
 			isMobileMenuOpen = false;
 		}
 	}
+
+	// Add/remove click listener when menu opens/closes
+	$: {
+		if (isMobileMenuOpen) {
+			window.addEventListener('click', handleClickOutside);
+		} else {
+			window.removeEventListener('click', handleClickOutside);
+		}
+	}
+
+	// Cleanup on destroy
+	onDestroy(() => {
+		window.removeEventListener('click', handleClickOutside);
+	});
 
 	$: navItems = [
 		{
@@ -87,8 +102,6 @@
 
 	$: currentPath = $page.url.pathname;
 </script>
-
-<svelte:window on:click={handleClickOutside} />
 
 <nav class="horizontal-nav">
 	<div class="nav-container">
