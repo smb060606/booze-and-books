@@ -8,6 +8,10 @@
 	import NotificationBell from '../components/notifications/NotificationBell.svelte';
 	import DashboardNav from '../components/dashboard/DashboardNav.svelte';
 	import type { PageData } from './$types';
+
+	// Import mobile utilities
+	import '$lib/styles/mobile-utilities.css';
+
 	export let data: PageData;
 
 	// SEO defaults

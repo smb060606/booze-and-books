@@ -512,4 +512,181 @@
 	.system-item.unread {
 		border-left: 3px solid #10b981;
 	}
+
+	/* ========================================
+	   MOBILE RESPONSIVENESS
+	   ======================================== */
+
+	/* Tablets and small desktops */
+	@media (max-width: 768px) {
+		.dropdown-content {
+			right: 1rem;
+			width: 360px;
+			max-width: calc(100vw - 2rem);
+		}
+	}
+
+	/* Mobile phones */
+	@media (max-width: 640px) {
+		.dropdown-overlay {
+			background: rgba(0, 0, 0, 0.5);
+		}
+
+		.dropdown-content {
+			position: fixed;
+			top: auto;
+			right: 0;
+			left: 0;
+			bottom: 0;
+			width: 100%;
+			max-width: 100%;
+			max-height: 85vh;
+			border-radius: 16px 16px 0 0;
+			box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.3);
+		}
+
+		.dropdown-header {
+			padding: 1.25rem 1rem 1rem;
+		}
+
+		.dropdown-header h3 {
+			font-size: 1.25rem;
+		}
+
+		.mark-all-btn {
+			font-size: 0.9rem;
+			padding: 0.5rem 0.75rem;
+			/* Ensure touch-friendly size */
+			min-height: 44px;
+			display: flex;
+			align-items: center;
+		}
+
+		.dropdown-body {
+			max-height: calc(85vh - 4rem);
+			/* Better touch scrolling */
+			-webkit-overflow-scrolling: touch;
+		}
+
+		/* Larger touch targets for mobile */
+		.notification-item {
+			padding: 1rem;
+			gap: 1rem;
+			min-height: 64px;
+		}
+
+		.notification-item:active {
+			background: #e5e7eb;
+		}
+
+		.item-icon {
+			width: 48px;
+			height: 48px;
+		}
+
+		.avatar,
+		.avatar-placeholder {
+			width: 48px;
+			height: 48px;
+			font-size: 1rem;
+		}
+
+		.notification-emoji {
+			font-size: 1.75rem;
+		}
+
+		.sender-name,
+		.notification-title {
+			font-size: 0.95rem;
+		}
+
+		.item-message {
+			font-size: 0.9rem;
+		}
+
+		.item-time {
+			font-size: 0.8rem;
+		}
+
+		.section h4 {
+			padding: 1rem 1rem 0.75rem;
+			font-size: 0.9rem;
+		}
+
+		.empty-state {
+			padding: 3rem 2rem;
+		}
+
+		.empty-icon {
+			font-size: 3rem;
+		}
+
+		.empty-state p {
+			font-size: 1rem;
+		}
+
+		.loading {
+			padding: 3rem 2rem;
+		}
+	}
+
+	/* Extra small phones */
+	@media (max-width: 480px) {
+		.dropdown-content {
+			max-height: 90vh;
+		}
+
+		.dropdown-body {
+			max-height: calc(90vh - 4rem);
+		}
+
+		.notification-item {
+			padding: 0.875rem;
+		}
+
+		.dropdown-header {
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		.mark-all-btn {
+			width: 100%;
+			justify-content: center;
+		}
+	}
+
+	/* Touch device optimizations */
+	@media (hover: none) and (pointer: coarse) {
+		.notification-item {
+			min-height: 64px;
+			-webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+		}
+
+		.mark-all-btn {
+			min-height: 44px;
+			-webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+		}
+
+		/* Remove hover states on touch devices */
+		.notification-item:hover {
+			background: transparent;
+		}
+
+		.notification-item.unread:hover {
+			background: #f0f9ff;
+		}
+
+		.mark-all-btn:hover {
+			background: none;
+		}
+	}
+
+	/* Accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		.notification-item,
+		.loading-spinner {
+			transition: none;
+			animation: none;
+		}
+	}
 </style>

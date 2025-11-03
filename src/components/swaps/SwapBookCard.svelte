@@ -109,4 +109,81 @@
 		font-size: 0.75rem;
 		color: #64748b;
 	}
+
+	/* ========================================
+	   MOBILE RESPONSIVENESS
+	   ======================================== */
+
+	/* Tablets and below */
+	@media (max-width: 768px) {
+		.book-card {
+			padding: 0.875rem;
+		}
+
+		.book-cover {
+			width: 70px;
+			height: 93px;
+		}
+	}
+
+	/* Mobile phones */
+	@media (max-width: 640px) {
+		.book-item h5 {
+			font-size: 0.8rem;
+			margin-bottom: 0.5rem;
+		}
+
+		.book-card {
+			padding: 0.75rem;
+			gap: 0.625rem;
+		}
+
+		.book-cover {
+			width: 80px;
+			height: 106px;
+		}
+
+		.book-info h6 {
+			font-size: 0.9rem;
+			line-height: 1.3;
+		}
+
+		.book-author {
+			font-size: 0.8rem;
+		}
+
+		.declined-label,
+		.counter-offer-label {
+			display: block;
+			margin-top: 0.25rem;
+		}
+	}
+
+	/* Extra small phones */
+	@media (max-width: 480px) {
+		.book-card {
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			padding: 1rem;
+		}
+
+		.book-cover {
+			width: 96px;
+			height: 128px;
+			margin-bottom: 0.75rem;
+		}
+
+		.book-info {
+			width: 100%;
+		}
+
+		.book-info h6 {
+			font-size: 1rem;
+		}
+
+		.book-author {
+			font-size: 0.85rem;
+		}
+	}
 </style>
