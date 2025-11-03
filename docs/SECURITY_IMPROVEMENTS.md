@@ -495,7 +495,7 @@ Before deploying to production:
 If you discover a security vulnerability:
 
 1. **Do not** open a public GitHub issue
-2. Email the maintainer directly at: [security@your-domain.com]
+2. Email the maintainer directly at: [security@example.com] **(Update before production)**
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -516,5 +516,5 @@ We will respond within 48 hours and provide updates on the fix timeline.
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 **Version**: 1.0.0

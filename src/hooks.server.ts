@@ -119,8 +119,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Enable XSS protection (legacy but still useful for older browsers)
 	response.headers.set('X-XSS-Protection', '1; mode=block');
 
-	// Enforce HTTPS in production
-	if (event.url.protocol === 'https:') {
+	// Enforce HTTPS in production (proxy-aware for Vercel/CDN deployments)
+	const proto = event.request.headers.get('x-forwarded-proto') || event.url.protocol.replace(':', '');
+	if (proto === 'https') {
 		response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
 	}
 
