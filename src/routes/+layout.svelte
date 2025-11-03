@@ -12,6 +12,10 @@
 	// Import mobile utilities
 	import '$lib/styles/mobile-utilities.css';
 
+	// Phase 3: Performance tracking and cache management
+	import { initPerformanceTracking } from '$lib/utils/performance';
+	import { initCacheCleanup, stopCacheCleanup } from '$lib/utils/cache';
+
 	export let data: PageData;
 
 	// SEO defaults
@@ -30,6 +34,10 @@
 		if (data.profile) {
 			profile.set(data.profile);
 		}
+
+		// Phase 3: Initialize performance tracking and cache cleanup
+		initPerformanceTracking();
+		initCacheCleanup();
 	});
 
 	onDestroy(() => {
@@ -41,6 +49,8 @@
 			realtimeUnsubscribers.unsubscribeBooks();
 			realtimeUnsubscribers.unsubscribeConnection();
 		}
+		// Phase 3: Stop cache cleanup interval
+		stopCacheCleanup();
 	});
 
 	// Realtime service cleanup functions

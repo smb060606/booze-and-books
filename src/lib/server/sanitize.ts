@@ -171,13 +171,3 @@ export function getCsrfTokenForClient(cookies: {
 
 	return token;
 }
-
-</file_content>
-<task_progress>
-- [x] Determine current project phase (v1.4 with counter-offer system and enhanced notifications)
-- [x] Identify next phase based on documentation (Security Improvements - Phase 2)
-- [x] Verify status of security improvements and confirm next phase
-- [x] Implement CSRF cookie secure flag fix
-- [x] Update username sanitization to allow mixed case (option b)
-</task_progress>
-</write_to_file>

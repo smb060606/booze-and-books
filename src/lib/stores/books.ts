@@ -358,9 +358,16 @@ class BookStore {
 	}
 
 	private handleSwapRequestChange(event: RealtimeChangeEvent) {
-		// When swap requests change (pending, accepted, completed), 
-		// we need to refresh discovery books as books might become available/unavailable
-		if (this.currentUserId) {
+		// Phase 3 Optimization: Only reload if the swap status affects book availability
+		// Don't reload on every swap change, only when status changes to/from PENDING
+		const affectsAvailability =
+			event.eventType === 'INSERT' ||
+			(event.eventType === 'UPDATE' &&
+			 event.old && event.new &&
+			 (event.old as any).status !== (event.new as any).status &&
+			 ((event.old as any).status === 'PENDING' || (event.new as any).status === 'PENDING'));
+
+		if (affectsAvailability && this.currentUserId) {
 			// Debounce the refresh to avoid too many calls
 			setTimeout(() => {
 				this.loadDiscoveryBooks(this.currentUserId);
