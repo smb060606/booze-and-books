@@ -6,9 +6,33 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { createServerClient } from '@supabase/ssr';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '$lib/server/rateLimit';
 
 export async function POST({ request, cookies }: RequestEvent) {
   try {
+    // Rate limiting - prevent account creation spam
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.AUTH);
+
+    if (rateLimitResult.isLimited) {
+      const retryAfter = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000);
+      return json(
+        {
+          error: RATE_LIMITS.AUTH.message,
+          retryAfter
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': RATE_LIMITS.AUTH.maxRequests.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitResult.resetAt.toString()
+          }
+        }
+      );
+    }
+
     const { email, password, full_name, username } = await request.json();
 
     if (!email || !password) {
