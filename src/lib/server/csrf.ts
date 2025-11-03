@@ -33,12 +33,13 @@ export function generateCsrfToken(): string {
 export function setCsrfCookie(cookies: {
 	set: (name: string, value: string, options: Record<string, unknown>) => void;
 }): string {
+	const secureFlag = process.env.NODE_ENV === 'production' || process.env.FORCE_SECURE_COOKIES === 'true';
 	const token = generateCsrfToken();
 
 	cookies.set(CSRF_COOKIE_NAME, token, {
 		path: '/',
 		httpOnly: true,
-		secure: true,
+		secure: secureFlag,
 		sameSite: 'lax',
 		maxAge: 60 * 60 * 24 // 24 hours
 	});
@@ -50,7 +51,7 @@ export function setCsrfCookie(cookies: {
  * Get CSRF token from cookie
  */
 export function getCsrfToken(cookies: { get: (name: string) => string | undefined }): string | null {
-	return cookies.get(CSRF_COOKIE_NAME) ?? null;
+	return cookies.get(CSRF_COOKIE_NAME)?? null;
 }
 
 /**
@@ -87,7 +88,7 @@ export async function validateCsrfToken(
 	if (!submittedToken && request.headers.get('content-type')?.includes('application/x-www-form-urlencoded')) {
 		try {
 			const formData = await request.clone().formData();
-			submittedToken = formData.get('csrf_token')?.toString() ?? null;
+			submittedToken = formData.get('csrf_token')?.toString()?? null;
 		} catch {
 			// Not form data or parsing failed
 		}
@@ -97,7 +98,7 @@ export async function validateCsrfToken(
 	if (!submittedToken && request.headers.get('content-type')?.includes('application/json')) {
 		try {
 			const body = await request.clone().json();
-			submittedToken = body.csrf_token ?? null;
+			submittedToken = body.csrf_token?? null;
 		} catch {
 			// Not JSON or parsing failed
 		}
@@ -116,7 +117,7 @@ export async function validateCsrfToken(
  * Prevents timing attacks by always comparing the full strings
  */
 function timingSafeEqual(a: string, b: string): boolean {
-	if (a.length !== b.length) {
+	if (a.length!== b.length) {
 		return false;
 	}
 
@@ -136,7 +137,7 @@ function timingSafeEqual(a: string, b: string): boolean {
  *   if (!await validateCsrfToken(request, cookies)) {
  *     return json({ error: 'Invalid CSRF token' }, { status: 403 });
  *   }
- *   // ... rest of handler
+ *   //... rest of handler
  * }
  * ```
  */

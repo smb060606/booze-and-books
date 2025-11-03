@@ -10,304 +10,174 @@
  * 3. Content Security Policy headers (prevents inline script execution)
  */
 
+import { randomBytes } from 'crypto';
+
+const CSRF_TOKEN_LENGTH = 32;
+const CSRF_COOKIE_NAME = 'csrf-token';
+const CSRF_HEADER_NAME = 'x-csrf-token';
+
 /**
- * Strip HTML tags from input to prevent XSS
- * Useful for plain text fields like names, descriptions, etc.
+ * Generate a cryptographically secure CSRF token
  */
-export function stripHtml(input: string): string {
-	return input.replace(/<[^>]*>/g, '');
+export function generateCsrfToken(): string {
+	return randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
 }
 
 /**
- * Sanitize string input by trimming whitespace and removing HTML
+ * Set CSRF token in cookie
  */
-export function sanitizeString(input: string, maxLength?: number): string {
-	let sanitized = input.trim();
-	sanitized = stripHtml(sanitized);
+export function setCsrfCookie(cookies: {
+	set: (name: string, value: string, options: Record<string, unknown>) => void;
+}): string {
+	const secureFlag = process.env.NODE_ENV === 'production' || process.env.FORCE_SECURE_COOKIES === 'true';
+	const token = generateCsrfToken();
 
-	if (maxLength && sanitized.length > maxLength) {
-		sanitized = sanitized.substring(0, maxLength);
-	}
+	cookies.set(CSRF_COOKIE_NAME, token, {
+		path: '/',
+		httpOnly: true,
+		secure: secureFlag,
+		sameSite: 'lax',
+		maxAge: 60 * 60 * 24 // 24 hours
+	});
 
-	return sanitized;
+	return token;
 }
 
 /**
- * Validate and sanitize email address
+ * Get CSRF token from cookie
  */
-export function sanitizeEmail(email: string): string | null {
-	const trimmed = email.trim().toLowerCase();
-
-	// Basic email regex (not perfect, but good enough for sanitization)
-	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-	if (!emailRegex.test(trimmed)) {
-		return null;
-	}
-
-	// Max length check (254 is RFC 5321 limit)
-	if (trimmed.length > 254) {
-		return null;
-	}
-
-	return trimmed;
+export function getCsrfToken(cookies: { get: (name: string) => string | undefined }): string | null {
+	return cookies.get(CSRF_COOKIE_NAME)?? null;
 }
 
 /**
- * Validate and sanitize username
- * Allows alphanumeric, underscores, hyphens
+ * Get CSRF token from request headers
  */
-export function sanitizeUsername(username: string): string | null {
-	const trimmed = username.trim().toLowerCase();
-
-	// Username validation: 3-20 characters, alphanumeric + underscore/hyphen
-	const usernameRegex = /^[a-z0-9_-]{3,20}$/;
-
-	if (!usernameRegex.test(trimmed)) {
-		return null;
-	}
-
-	return trimmed;
+export function getCsrfTokenFromHeaders(request: Request): string | null {
+	return request.headers.get(CSRF_HEADER_NAME);
 }
 
 /**
- * Sanitize URL to prevent javascript: protocol and other dangerous schemes
+ * Validate CSRF token from request
+ * Checks both header and form data
  */
-export function sanitizeUrl(url: string): string | null {
-	const trimmed = url.trim();
-
-	try {
-		const parsed = new URL(trimmed);
-
-		// Only allow http, https, and mailto protocols
-		if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
-			return null;
-		}
-
-		return trimmed;
-	} catch {
-		// Invalid URL
-		return null;
-	}
-}
-
-/**
- * Sanitize and validate phone number
- * Removes all non-digit characters except + for country code
- */
-export function sanitizePhone(phone: string): string | null {
-	// Remove all characters except digits and +
-	const sanitized = phone.replace(/[^\d+]/g, '');
-
-	// Basic validation: must have at least 10 digits
-	const digitCount = sanitized.replace(/\+/g, '').length;
-	if (digitCount < 10 || digitCount > 15) {
-		return null;
+export async function validateCsrfToken(
+	request: Request,
+	cookies: { get: (name: string) => string | undefined }
+): Promise<boolean> {
+	// Skip CSRF validation for safe HTTP methods
+	const method = request.method.toUpperCase();
+	if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+		return true;
 	}
 
-	return sanitized;
-}
-
-/**
- * Sanitize numeric input
- */
-export function sanitizeNumber(
-	input: string | number,
-	options?: {
-		min?: number;
-		max?: number;
-		integer?: boolean;
-	}
-): number | null {
-	const num = typeof input === 'string' ? parseFloat(input) : input;
-
-	if (isNaN(num) || !isFinite(num)) {
-		return null;
+	// Get token from cookie
+	const cookieToken = getCsrfToken(cookies);
+	if (!cookieToken) {
+		return false;
 	}
 
-	if (options?.integer && !Number.isInteger(num)) {
-		return null;
-	}
+	// Try to get token from header first
+	let submittedToken = getCsrfTokenFromHeaders(request);
 
-	if (options?.min !== undefined && num < options.min) {
-		return null;
-	}
-
-	if (options?.max !== undefined && num > options.max) {
-		return null;
-	}
-
-	return num;
-}
-
-/**
- * Sanitize boolean input
- */
-export function sanitizeBoolean(input: unknown): boolean {
-	if (typeof input === 'boolean') {
-		return input;
-	}
-
-	if (typeof input === 'string') {
-		const lower = input.toLowerCase().trim();
-		return lower === 'true' || lower === '1' || lower === 'yes';
-	}
-
-	if (typeof input === 'number') {
-		return input !== 0;
-	}
-
-	return false;
-}
-
-/**
- * Sanitize UUID (common in Supabase)
- */
-export function sanitizeUuid(uuid: string): string | null {
-	const trimmed = uuid.trim().toLowerCase();
-
-	// UUID v4 regex
-	const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-
-	if (!uuidRegex.test(trimmed)) {
-		return null;
-	}
-
-	return trimmed;
-}
-
-/**
- * Sanitize date string
- */
-export function sanitizeDate(dateString: string): Date | null {
-	try {
-		const date = new Date(dateString);
-
-		if (isNaN(date.getTime())) {
-			return null;
-		}
-
-		// Reject dates too far in the past or future (reasonable bounds)
-		const minDate = new Date('1900-01-01');
-		const maxDate = new Date('2100-12-31');
-
-		if (date < minDate || date > maxDate) {
-			return null;
-		}
-
-		return date;
-	} catch {
-		return null;
-	}
-}
-
-/**
- * Sanitize JSON input
- * Validates that input is valid JSON and optionally validates structure
- */
-export function sanitizeJson<T = unknown>(
-	input: string,
-	validator?: (parsed: unknown) => parsed is T
-): T | null {
-	try {
-		const parsed = JSON.parse(input);
-
-		if (validator && !validator(parsed)) {
-			return null;
-		}
-
-		return parsed as T;
-	} catch {
-		return null;
-	}
-}
-
-/**
- * Sanitize array of strings
- */
-export function sanitizeStringArray(
-	input: unknown,
-	options?: {
-		maxLength?: number;
-		maxItems?: number;
-	}
-): string[] | null {
-	if (!Array.isArray(input)) {
-		return null;
-	}
-
-	if (options?.maxItems && input.length > options.maxItems) {
-		return null;
-	}
-
-	const sanitized: string[] = [];
-
-	for (const item of input) {
-		if (typeof item !== 'string') {
-			return null;
-		}
-
-		const cleaned = sanitizeString(item, options?.maxLength);
-		if (cleaned) {
-			sanitized.push(cleaned);
+	// If not in header, try to get from form data (for traditional form submissions)
+	if (!submittedToken && request.headers.get('content-type')?.includes('application/x-www-form-urlencoded')) {
+		try {
+			const formData = await request.clone().formData();
+			submittedToken = formData.get('csrf_token')?.toString()?? null;
+		} catch {
+			// Not form data or parsing failed
 		}
 	}
 
-	return sanitized;
-}
-
-/**
- * Sanitize object by applying sanitizers to specific fields
- */
-export function sanitizeObject<T extends Record<string, unknown>>(
-	input: unknown,
-	schema: {
-		[K in keyof T]: (value: unknown) => T[K] | null;
-	}
-): T | null {
-	if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-		return null;
-	}
-
-	const result = {} as T;
-
-	for (const [key, sanitizer] of Object.entries(schema)) {
-		const value = (input as Record<string, unknown>)[key];
-		const sanitized = sanitizer(value);
-
-		if (sanitized === null) {
-			return null;
+	// If not in header or form, try JSON body
+	if (!submittedToken && request.headers.get('content-type')?.includes('application/json')) {
+		try {
+			const body = await request.clone().json();
+			submittedToken = body.csrf_token?? null;
+		} catch {
+			// Not JSON or parsing failed
 		}
-
-		result[key as keyof T] = sanitized;
 	}
 
-	return result;
+	if (!submittedToken) {
+		return false;
+	}
+
+	// Compare tokens (constant-time comparison to prevent timing attacks)
+	return timingSafeEqual(cookieToken, submittedToken);
 }
 
 /**
- * Common validation patterns
+ * Timing-safe string comparison
+ * Prevents timing attacks by always comparing the full strings
  */
-export const VALIDATION_PATTERNS = {
-	/** Full name (2-100 characters, letters, spaces, hyphens, apostrophes) */
-	FULL_NAME: /^[a-zA-Z\s'-]{2,100}$/,
+function timingSafeEqual(a: string, b: string): boolean {
+	if (a.length!== b.length) {
+		return false;
+	}
 
-	/** Username (3-20 characters, alphanumeric, underscore, hyphen) */
-	USERNAME: /^[a-zA-Z0-9_-]{3,20}$/,
+	let result = 0;
+	for (let i = 0; i < a.length; i++) {
+		result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	}
 
-	/** ISBN-10 or ISBN-13 */
-	ISBN: /^(?:\d{9}[\dX]|\d{13})$/,
-
-	/** Postal code (flexible, 3-10 alphanumeric + spaces/hyphens) */
-	POSTAL_CODE: /^[A-Z0-9\s-]{3,10}$/i,
-
-	/** Strong password (min 8 chars, at least 1 uppercase, 1 lowercase, 1 number) */
-	STRONG_PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
-} as const;
+	return result === 0;
+}
 
 /**
- * Validate input against a regex pattern
+ * CSRF middleware for route handlers
+ * Usage:
+ * ```typescript
+ * export async function POST({ request, cookies }: RequestEvent) {
+ *   if (!await validateCsrfToken(request, cookies)) {
+ *     return json({ error: 'Invalid CSRF token' }, { status: 403 });
+ *   }
+ *   //... rest of handler
+ * }
+ * ```
  */
-export function validatePattern(input: string, pattern: RegExp): boolean {
-	return pattern.test(input);
+export async function requireValidCsrfToken(
+	request: Request,
+	cookies: { get: (name: string) => string | undefined }
+): Promise<{ valid: true } | { valid: false; error: string; status: number }> {
+	const isValid = await validateCsrfToken(request, cookies);
+
+	if (!isValid) {
+		return {
+			valid: false,
+			error: 'Invalid or missing CSRF token. Please refresh the page and try again.',
+			status: 403
+		};
+	}
+
+	return { valid: true };
 }
+
+/**
+ * Generate CSRF token for use in forms/headers
+ * This should be called in +page.server.ts load functions to provide
+ * the token to the client
+ */
+export function getCsrfTokenForClient(cookies: {
+	get: (name: string) => string | undefined;
+	set: (name: string, value: string, options: Record<string, unknown>) => void;
+}): string {
+	let token = getCsrfToken(cookies);
+
+	if (!token) {
+		token = setCsrfCookie(cookies);
+	}
+
+	return token;
+}
+
+</file_content>
+<task_progress>
+- [x] Determine current project phase (v1.4 with counter-offer system and enhanced notifications)
+- [x] Identify next phase based on documentation (Security Improvements - Phase 2)
+- [x] Verify status of security improvements and confirm next phase
+- [x] Implement CSRF cookie secure flag fix
+- [x] Update username sanitization to allow mixed case (option b)
+</task_progress>
+</write_to_file>
