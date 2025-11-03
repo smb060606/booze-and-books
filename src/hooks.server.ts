@@ -102,9 +102,33 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	return resolve(event, {
+	const response = await resolve(event, {
 		filterSerializedResponseHeaders(name) {
 			return name === 'content-range' || name === 'x-supabase-api-version';
 		},
 	});
+
+	// Add comprehensive security headers
+	// Prevent clickjacking attacks
+	response.headers.set('X-Frame-Options', 'DENY');
+	response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+
+	// Prevent MIME type sniffing
+	response.headers.set('X-Content-Type-Options', 'nosniff');
+
+	// Enable XSS protection (legacy but still useful for older browsers)
+	response.headers.set('X-XSS-Protection', '1; mode=block');
+
+	// Enforce HTTPS in production
+	if (event.url.protocol === 'https:') {
+		response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+	}
+
+	// Control referrer information
+	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+	// Permissions policy (restrict browser features)
+	response.headers.set('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
+
+	return response;
 };
