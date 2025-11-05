@@ -196,9 +196,8 @@ export class BookServiceServer {
 				// Apply sorting
 				queryBuilder = queryBuilder.order(sortBy, { ascending: sortOrder === 'asc' });
 
-				// Fetch one extra to check if there are more results
 				const { data, error, count } = await queryBuilder
-					.range(offset, offset + limit); // Fetch limit + 1
+					.range(offset, offset + limit - 1); // Fetch exactly limit items
 
 				if (error) {
 					throw new Error('Failed to fetch available books: ' + error.message);
