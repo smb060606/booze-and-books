@@ -109,6 +109,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	});
 
 	// Add comprehensive security headers
+	// NOTE: X-Frame-Options, X-Content-Type-Options, and X-XSS-Protection are also set in vercel.json
+	// for defense-in-depth. Both layers ensure headers are applied even if one mechanism fails.
+
 	// Prevent clickjacking attacks
 	response.headers.set('X-Frame-Options', 'DENY');
 	response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
