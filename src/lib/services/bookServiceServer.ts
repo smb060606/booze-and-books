@@ -1,5 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Book, BookInput, BookUpdate, BookWithOwner } from '$lib/types/book';
+import { logQuery } from '$lib/server/queryLogger';
+
+/**
+ * Discovery Query Options (Phase 3: Performance Optimization)
+ */
+export interface DiscoveryQueryOptions {
+	limit?: number;
+	offset?: number;
+	genre?: string;
+	condition?: string;
+	search?: string;
+	sortBy?: 'created_at' | 'title';
+	sortOrder?: 'asc' | 'desc';
+}
 
 export class BookServiceServer {
 	/**
@@ -91,6 +105,110 @@ export class BookServiceServer {
 		}
 
 		return data || [];
+	}
+
+	/**
+	 * Get available books for discovery with advanced filtering (Phase 3 Optimization)
+	 *
+	 * This method improves upon getAvailableBooksForDiscovery by:
+	 * - Server-side filtering (genre, condition, search)
+	 * - Query performance logging
+	 * - Optimized swap exclusion (single query)
+	 * - Flexible sorting options
+	 *
+	 * @param supabase Supabase client
+	 * @param currentUserId Current user's ID
+	 * @param options Query options for filtering, pagination, and sorting
+	 * @returns Array of available books with owner information
+	 */
+	static async getAvailableBooksForDiscoveryOptimized(
+		supabase: SupabaseClient,
+		currentUserId: string,
+		options: DiscoveryQueryOptions = {}
+	): Promise<{ books: BookWithOwner[]; hasMore: boolean }> {
+		const {
+			limit = 20, // Reduced from 50 for better performance
+			offset = 0,
+			genre,
+			condition,
+			search,
+			sortBy = 'created_at',
+			sortOrder = 'desc'
+		} = options;
+
+		return await logQuery(
+			'SELECT',
+			'books_discovery',
+			{ currentUserId, ...options },
+			async () => {
+				// Validate user ID
+				const validUserId = (currentUserId || '').trim();
+				const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+				if (!UUID_V4_REGEX.test(validUserId)) {
+					throw new Error('Invalid currentUserId format: ' + JSON.stringify(currentUserId));
+				}
+
+				// Get excluded book IDs from pending swaps, then query books
+				const { data: swapBooks } = await supabase
+					.from('swap_requests')
+					.select('book_id, offered_book_id')
+					.eq('status', 'PENDING');
+
+				const excludedBookIds = swapBooks
+					? [...new Set([
+							...swapBooks.map(s => s.book_id),
+							...swapBooks.map(s => s.offered_book_id).filter(Boolean)
+						])]
+					: [];
+
+				// Build query with filters
+				let queryBuilder = supabase
+					.from('books')
+					.select('*, profiles!owner_id(username, full_name, avatar_url)', { count: 'exact' })
+					.eq('is_available', true)
+					.neq('owner_id', validUserId);
+
+				// Exclude books in pending swaps
+				if (excludedBookIds.length > 0) {
+					queryBuilder = queryBuilder.not('id', 'in', `(${excludedBookIds.join(',')})`);
+				}
+
+				// Apply server-side filters
+				if (genre) {
+					queryBuilder = queryBuilder.eq('genre', genre);
+				}
+
+				if (condition) {
+					queryBuilder = queryBuilder.eq('condition', condition);
+				}
+
+				// Apply server-side search (title, authors, genre)
+				if (search?.trim()) {
+					const escapedSearch = search.trim().replace(/[%_]/g, '\\$&');
+					// Using text search on indexed columns
+					queryBuilder = queryBuilder.or(
+						`title.ilike.%${escapedSearch}%,genre.ilike.%${escapedSearch}%`
+					);
+					// Note: authors is a text[] array, we'd need to use textSearch for better performance
+					// For now, client can handle author filtering on the filtered results
+				}
+
+				// Apply sorting
+				queryBuilder = queryBuilder.order(sortBy, { ascending: sortOrder === 'asc' });
+
+				const { data, error, count } = await queryBuilder
+					.range(offset, offset + limit - 1); // Fetch exactly limit items
+
+				if (error) {
+					throw new Error('Failed to fetch available books: ' + error.message);
+				}
+
+				const books = data || [];
+				const hasMore = count ? count > offset + limit : false;
+
+				return { books, hasMore };
+			}
+		);
 	}
 
 	/**

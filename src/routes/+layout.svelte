@@ -12,6 +12,10 @@
 	// Import mobile utilities
 	import '$lib/styles/mobile-utilities.css';
 
+	// Phase 3: Performance tracking and cache management
+	import { initPerformanceTracking } from '$lib/utils/performance';
+	import { initCacheCleanup, stopCacheCleanup } from '$lib/utils/cache';
+
 	export let data: PageData;
 
 	// SEO defaults
@@ -26,20 +30,34 @@
 
 	// initialize store on client
 	onMount(() => {
-		auth.initialize(data.session);
-		if (data.profile) {
-			profile.set(data.profile);
+		try {
+			auth.initialize(data.session);
+			if (data.profile) {
+				profile.set(data.profile);
+			}
+
+			// Phase 3: Initialize performance tracking and cache cleanup
+			initPerformanceTracking();
+			initCacheCleanup();
+		} catch (error) {
+			console.error('Initialization error:', error);
 		}
 	});
 
 	onDestroy(() => {
-		auth.teardown();
-		// Cleanup realtime subscriptions
-		if (realtimeUnsubscribers) {
-			realtimeUnsubscribers.unsubscribeNotifications();
-			realtimeUnsubscribers.unsubscribeSwaps();
-			realtimeUnsubscribers.unsubscribeBooks();
-			realtimeUnsubscribers.unsubscribeConnection();
+		try {
+			auth.teardown();
+			// Cleanup realtime subscriptions
+			if (realtimeUnsubscribers) {
+				realtimeUnsubscribers.unsubscribeNotifications();
+				realtimeUnsubscribers.unsubscribeSwaps();
+				realtimeUnsubscribers.unsubscribeBooks();
+				realtimeUnsubscribers.unsubscribeConnection();
+			}
+			// Phase 3: Stop cache cleanup interval
+			stopCacheCleanup();
+		} catch (error) {
+			console.error('Cleanup error:', error);
 		}
 	});
 

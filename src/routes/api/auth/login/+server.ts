@@ -111,7 +111,7 @@ export async function POST({ request, cookies }: RequestEvent) {
     // Log successful authentication
     logAuthSuccess({
       userId: data.user.id,
-      email: data.user.email!,
+      email: data.user.email || 'unknown',
       ip: metadata.ip,
       userAgent: metadata.userAgent,
       path: metadata.path
@@ -121,7 +121,7 @@ export async function POST({ request, cookies }: RequestEvent) {
       success: true,
       user: {
         id: data.user.id,
-        email: data.user.email,
+        email: data.user.email || null,
         user_metadata: data.user.user_metadata,
       },
     });
