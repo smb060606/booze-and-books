@@ -170,8 +170,17 @@ export function clearOldCache(): void {
 				const entry: CacheEntry<unknown> = JSON.parse(item);
 				const age = now - entry.timestamp;
 
+				// Normalize TTL if missing or invalid
+				let ttl = entry.ttl;
+				if (!ttl || !Number.isFinite(ttl)) {
+					ttl = DEFAULT_TTL;
+					// Write normalized TTL back to localStorage for future runs
+					entry.ttl = ttl;
+					localStorage.setItem(key, JSON.stringify(entry));
+				}
+
 				// Remove if older than 2x TTL
-				if (age > entry.ttl * 2) {
+				if (age > ttl * 2) {
 					localStorage.removeItem(key);
 				}
 			} catch (error) {

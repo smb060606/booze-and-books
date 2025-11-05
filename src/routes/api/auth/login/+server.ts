@@ -121,7 +121,7 @@ export async function POST({ request, cookies }: RequestEvent) {
       success: true,
       user: {
         id: data.user.id,
-        email: data.user.email,
+        email: data.user.email || null,
         user_metadata: data.user.user_metadata,
       },
     });

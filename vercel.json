@@ -1,5 +1,6 @@
 {
 	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"_comment": "Security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection) are also set in src/hooks.server.ts for defense-in-depth. Both layers ensure headers are applied even if one mechanism fails.",
 	"headers": [
 		{
 			"source": "/(.*)",
@@ -32,12 +33,21 @@
 			"headers": [
 				{
 					"key": "Cache-Control",
-					"value": "public, max-age=86400, must-revalidate"
+					"value": "public, max-age=604800, must-revalidate"
 				}
 			]
 		},
 		{
-			"source": "/:path*.(css|js|woff2|woff|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp)",
+			"source": "/static/:path*",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=3600"
+				}
+			]
+		},
+		{
+			"source": "/_app/:path*.(css|js|woff2|woff|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp)",
 			"headers": [
 				{
 					"key": "Cache-Control",

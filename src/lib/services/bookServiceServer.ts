@@ -148,7 +148,7 @@ export class BookServiceServer {
 					throw new Error('Invalid currentUserId format: ' + JSON.stringify(currentUserId));
 				}
 
-				// Get excluded book IDs from pending swaps (optimized single query)
+				// Get excluded book IDs from pending swaps, then query books
 				const { data: swapBooks } = await supabase
 					.from('swap_requests')
 					.select('book_id, offered_book_id')

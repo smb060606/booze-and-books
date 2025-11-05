@@ -495,7 +495,7 @@ Before deploying to production:
 If you discover a security vulnerability:
 
 1. **Do not** open a public GitHub issue
-2. Email the maintainer directly at: [security@example.com] **(Update before production)**
+2. Email the maintainer directly at: security@boozeandbooks.me
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

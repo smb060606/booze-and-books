@@ -19,9 +19,10 @@
 	$: hasMore = data.hasMore;
 	$: pageSize = data.pageSize;
 
-	// Get unique genres and conditions for filters (for UI only)
-	$: uniqueGenres = [...new Set(availableBooks.map(book => book.genre).filter(Boolean))].sort() as string[];
-	$: uniqueConditions = [...new Set(availableBooks.map(book => book.condition))].sort();
+	// Get unique genres and conditions from server-provided filter options
+	// This ensures all filter options are available regardless of current page
+	$: uniqueGenres = data.filterOptions?.genres || [];
+	$: uniqueConditions = data.filterOptions?.conditions || [];
 
 	// Build URL with search params
 	function buildFilterUrl(params: Record<string, string | number | null>) {
@@ -43,15 +44,18 @@
 	// Apply filters by navigating to new URL (triggers server reload)
 	async function applyFilters() {
 		isLoading = true;
-		const url = buildFilterUrl({
-			search: searchQuery || null,
-			genre: selectedGenre || null,
-			condition: selectedCondition || null,
-			page: 1, // Reset to first page on filter change
-			pageSize
-		});
-		await goto(url, { replaceState: false, keepFocus: true });
-		isLoading = false;
+		try {
+			const url = buildFilterUrl({
+				search: searchQuery || null,
+				genre: selectedGenre || null,
+				condition: selectedCondition || null,
+				page: 1, // Reset to first page on filter change
+				pageSize
+			});
+			await goto(url, { replaceState: false, keepFocus: true });
+		} finally {
+			isLoading = false;
+		}
 	}
 
 	// Handle search with debounce
@@ -74,18 +78,20 @@
 	// Pagination handlers
 	async function goToPage(newPage: number) {
 		isLoading = true;
-		const url = buildFilterUrl({
-			search: searchQuery || null,
-			genre: selectedGenre || null,
-			condition: selectedCondition || null,
-			page: newPage,
-			pageSize
-		});
-		await goto(url, { replaceState: false, keepFocus: true });
-		isLoading = false;
-
-		// Scroll to top of results
-		window.scrollTo({ top: 0, behavior: 'smooth' });
+		try {
+			const url = buildFilterUrl({
+				search: searchQuery || null,
+				genre: selectedGenre || null,
+				condition: selectedCondition || null,
+				page: newPage,
+				pageSize
+			});
+			await goto(url, { replaceState: false, keepFocus: true });
+			// Scroll to top of results after successful navigation
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		} finally {
+			isLoading = false;
+		}
 	}
 
 	function nextPage() {

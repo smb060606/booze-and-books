@@ -54,6 +54,22 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			}
 		);
 
+		// Fetch all unique genres and conditions for filter options
+		const { data: genreData } = await locals.supabase
+			.from('books')
+			.select('genre')
+			.eq('is_available', true)
+			.neq('owner_id', currentUserId);
+
+		const { data: conditionData } = await locals.supabase
+			.from('books')
+			.select('condition')
+			.eq('is_available', true)
+			.neq('owner_id', currentUserId);
+
+		const allGenres = [...new Set(genreData?.map(b => b.genre).filter(Boolean))].sort() as string[];
+		const allConditions = [...new Set(conditionData?.map(b => b.condition))].sort() as string[];
+
 		return {
 			availableBooks,
 			hasMore,
@@ -65,6 +81,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				search: search || null,
 				sortBy,
 				sortOrder
+			},
+			filterOptions: {
+				genres: allGenres,
+				conditions: allConditions
 			}
 		};
 	} catch (err) {
@@ -84,7 +104,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				search: null,
 				sortBy: 'created_at' as const,
 				sortOrder: 'desc' as const
-			}
+			},
+			filterOptions: {
+				genres: [],
+				conditions: []
+			},
+			error: true
 		};
 	}
 };
