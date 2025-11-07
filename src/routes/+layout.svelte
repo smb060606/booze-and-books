@@ -8,6 +8,8 @@
 	import NotificationBell from '../components/notifications/NotificationBell.svelte';
 	import DashboardNav from '../components/dashboard/DashboardNav.svelte';
 	import type { PageData } from './$types';
+	import { browser } from '$app/environment';
+	import { lockScroll, unlockScroll } from '$lib/utils/scrollLock';
 
 	// Import mobile utilities
 	import '$lib/styles/mobile-utilities.css';
@@ -17,6 +19,9 @@
 	import { initCacheCleanup, stopCacheCleanup } from '$lib/utils/cache';
 
 	export let data: PageData;
+
+	// Mobile menu state for public navigation
+	let isMobileMenuOpen = false;
 
 	// SEO defaults
 	const siteName = 'Booze & Books';
@@ -56,10 +61,37 @@
 			}
 			// Phase 3: Stop cache cleanup interval
 			stopCacheCleanup();
+			// Cleanup mobile menu
+			if (browser) {
+				unlockScroll();
+			}
 		} catch (error) {
 			console.error('Cleanup error:', error);
 		}
 	});
+
+	// Mobile menu functions for public navigation
+	function toggleMobileMenu() {
+		isMobileMenuOpen = !isMobileMenuOpen;
+	}
+
+	function closeMobileMenu() {
+		isMobileMenuOpen = false;
+	}
+
+	// Handle scroll lock when mobile menu opens/closes
+	$: if (browser) {
+		if (isMobileMenuOpen) {
+			lockScroll();
+		} else {
+			unlockScroll();
+		}
+	}
+
+	// Close menu when route changes
+	$: if ($page.url.pathname) {
+		isMobileMenuOpen = false;
+	}
 
 	// Realtime service cleanup functions
 	let realtimeUnsubscribers: {
@@ -135,11 +167,27 @@
 					📚 Booze & Books
 				</a>
 			</div>
-			
-			<div class="nav-auth">
-				<a href="/docs" class="nav-link">Documentation</a>
-				<a href="/auth/login" class="nav-link">Sign In</a>
-				<a href="/auth/signup" class="nav-link primary">Sign Up</a>
+
+			<!-- Mobile menu toggle button -->
+			<button
+				class="mobile-menu-toggle"
+				on:click={toggleMobileMenu}
+				aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+				aria-expanded={isMobileMenuOpen}
+			>
+				<svg class="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					{#if isMobileMenuOpen}
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					{:else}
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+					{/if}
+				</svg>
+			</button>
+
+			<div class="nav-auth" class:mobile-menu-open={isMobileMenuOpen}>
+				<a href="/docs" class="nav-link" on:click={closeMobileMenu}>Documentation</a>
+				<a href="/auth/login" class="nav-link" on:click={closeMobileMenu}>Sign In</a>
+				<a href="/auth/signup" class="nav-link primary" on:click={closeMobileMenu}>Sign Up</a>
 			</div>
 		</nav>
 	{/if}
@@ -169,10 +217,14 @@
 		justify-content: space-between;
 		align-items: center;
 		box-shadow: 0 2px 8px rgba(139, 38, 53, 0.3);
+		position: sticky;
+		top: 0;
+		z-index: 100;
 	}
 
 	.nav-brand {
 		flex-shrink: 0;
+		z-index: 101;
 	}
 
 	.brand-link {
@@ -191,6 +243,33 @@
 		color: #D4AF37;
 		background-color: rgba(255, 255, 255, 0.1);
 		transform: translateY(-1px);
+	}
+
+	/* Mobile menu toggle button */
+	.mobile-menu-toggle {
+		display: none;
+		background: none;
+		border: none;
+		color: #F5F5DC;
+		cursor: pointer;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		transition: all 0.2s ease;
+		min-width: 44px;
+		min-height: 44px;
+		align-items: center;
+		justify-content: center;
+		z-index: 101;
+	}
+
+	.mobile-menu-toggle:hover {
+		background: rgba(212, 175, 55, 0.2);
+		color: #D4AF37;
+	}
+
+	.menu-icon {
+		width: 1.5rem;
+		height: 1.5rem;
 	}
 
 	.nav-user {
@@ -263,6 +342,7 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+		transition: transform 0.3s ease-in-out;
 	}
 
 	.nav-link {
@@ -272,6 +352,7 @@
 		padding: 0.5rem 1rem;
 		border-radius: 6px;
 		transition: all 0.2s;
+		white-space: nowrap;
 	}
 
 	.nav-link:hover {
@@ -311,5 +392,128 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		padding: 2rem;
+	}
+
+	/* ========================================
+	   MOBILE RESPONSIVENESS - PUBLIC NAV
+	   ======================================== */
+
+	/* Tablet and below - Show hamburger menu */
+	@media (max-width: 768px) {
+		.main-nav {
+			padding: 1rem;
+			position: relative;
+		}
+
+		/* Show mobile menu toggle */
+		.mobile-menu-toggle {
+			display: flex;
+			order: 3;
+		}
+
+		/* Navigation items become mobile menu */
+		.nav-auth {
+			position: fixed;
+			top: 0;
+			right: 0;
+			width: 280px;
+			max-width: 85vw;
+			height: 100vh;
+			background: linear-gradient(135deg, #8B2635 0%, #722F37 100%);
+			box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
+			flex-direction: column;
+			gap: 0;
+			padding: 5rem 0 2rem 0;
+			transform: translateX(100%);
+			transition: transform 0.3s ease-in-out;
+			z-index: 100;
+			border-left: 2px solid #D4AF37;
+		}
+
+		.nav-auth.mobile-menu-open {
+			transform: translateX(0);
+		}
+
+		/* Mobile menu items */
+		.nav-link {
+			width: 100%;
+			padding: 1rem 1.5rem;
+			border-radius: 0;
+			justify-content: flex-start;
+			border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+			min-height: 48px;
+			display: flex;
+			align-items: center;
+		}
+
+		.nav-link:hover {
+			transform: none;
+			background: rgba(212, 175, 55, 0.15);
+		}
+
+		.nav-link.primary {
+			background: linear-gradient(135deg, #D4AF37 0%, #B8941F 100%);
+			color: #8B2635;
+			font-weight: 600;
+			margin: 1rem 1.5rem;
+			width: calc(100% - 3rem);
+			border-radius: 8px;
+			justify-content: center;
+		}
+
+		.nav-link.primary:hover {
+			background: linear-gradient(135deg, #B8941F 0%, #D4AF37 100%);
+			transform: translateY(-1px);
+		}
+
+		.brand-link {
+			font-size: 0.85rem;
+		}
+	}
+
+	/* Small phones */
+	@media (max-width: 480px) {
+		.main-nav {
+			padding: 0.75rem;
+		}
+
+		.brand-link {
+			font-size: 0.75rem;
+			padding: 0.375rem;
+		}
+
+		.nav-auth {
+			width: 100%;
+			max-width: 100vw;
+		}
+
+		.nav-link {
+			padding: 0.875rem 1.25rem;
+		}
+	}
+
+	/* Touch device optimizations */
+	@media (hover: none) and (pointer: coarse) {
+		.nav-link,
+		.mobile-menu-toggle {
+			min-height: 48px;
+		}
+
+		.mobile-menu-toggle {
+			-webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+		}
+	}
+
+	/* Reduce motion for accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		.nav-auth {
+			transition: none;
+		}
+
+		.nav-link,
+		.mobile-menu-toggle,
+		.brand-link {
+			transition: none;
+		}
 	}
 </style>
