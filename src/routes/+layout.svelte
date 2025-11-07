@@ -44,6 +44,30 @@
 			// Phase 3: Initialize performance tracking and cache cleanup
 			initPerformanceTracking();
 			initCacheCleanup();
+
+			// Handle resize from mobile to desktop - close menu and unlock scroll
+			if (browser) {
+				const mobileBreakpoint = window.matchMedia('(max-width: 768px)');
+
+				const handleResize = (e: MediaQueryListEvent | MediaQueryList) => {
+					// If viewport exceeds mobile breakpoint (desktop), close menu and unlock scroll
+					if (!e.matches && isMobileMenuOpen) {
+						isMobileMenuOpen = false;
+						unlockScroll();
+					}
+				};
+
+				// Check initial state
+				handleResize(mobileBreakpoint);
+
+				// Listen for changes
+				mobileBreakpoint.addEventListener('change', handleResize);
+
+				// Cleanup function stored for onDestroy
+				return () => {
+					mobileBreakpoint.removeEventListener('change', handleResize);
+				};
+			}
 		} catch (error) {
 			console.error('Initialization error:', error);
 		}
@@ -77,6 +101,9 @@
 
 	function closeMobileMenu() {
 		isMobileMenuOpen = false;
+		if (browser) {
+			unlockScroll();
+		}
 	}
 
 	// Handle scroll lock when mobile menu opens/closes
